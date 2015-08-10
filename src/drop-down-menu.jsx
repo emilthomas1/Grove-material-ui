@@ -26,6 +26,7 @@ let DropDownMenu = React.createClass({
     autoWidth: React.PropTypes.bool,
     onChange: React.PropTypes.func,
     menuItems: React.PropTypes.array.isRequired,
+    menuStyle: React.PropTypes.object,
     menuItemStyle: React.PropTypes.object,
     underlineStyle:React.PropTypes.object,
     iconStyle:React.PropTypes.object,
@@ -44,7 +45,9 @@ let DropDownMenu = React.createClass({
   getInitialState() {
     return {
       open: false,
-      selectedIndex: this._isControlled() ? null : (this.props.selectedIndex || 0),
+      isHovered: false,
+      selectedIndex: (this.props.hasOwnProperty('value') ||
+        this.props.hasOwnProperty('valueLink')) ? null : (this.props.selectedIndex || 0),
     };
   },
 
@@ -152,7 +155,7 @@ let DropDownMenu = React.createClass({
   render() {
     let _this = this;
     let styles = this.getStyles();
-    let selectedIndex = this._isControlled() ? null : this.state.selectedIndex;
+    let selectedIndex = this.state.selectedIndex;
     let displayValue = "";
     if (selectedIndex) {
       if (process.env.NODE_ENV !== 'production') {
@@ -160,13 +163,11 @@ let DropDownMenu = React.createClass({
       }
     }
     else {
-      if (this.props.valueMember && this._isControlled()) {
-        let value = this.props.hasOwnProperty('value') ? this.props.value : this.props.valueLink.value;
-        if (value) {
-          for (let i = 0; i < this.props.menuItems.length; i++) {
-            if (this.props.menuItems[i][this.props.valueMember] === value) {
-              selectedIndex = i;
-            }
+      if (this.props.valueMember && (this.props.valueLink || this.props.value)) {
+        let value = this.props.value || this.props.valueLink.value;
+        for (let i = 0; i < this.props.menuItems.length; i++) {
+          if (this.props.menuItems[i][this.props.valueMember] === value) {
+            selectedIndex = i;
           }
         }
       }
@@ -183,9 +184,13 @@ let DropDownMenu = React.createClass({
       return item;
     });
 
+    console.log(`running?`);
+
     return (
       <div
         ref="root"
+        onMouseLeave={this._handleMouseLeave}
+        onMouseEnter={this._handleMouseEnter}
         onKeyDown={this._onKeyDown}
         onFocus={this.props.onFocus}
         onBlur={this.props.onBlur}
@@ -209,7 +214,7 @@ let DropDownMenu = React.createClass({
             autoWidth={this.props.autoWidth}
             selectedIndex={selectedIndex}
             menuItems={menuItems}
-            style={styles.menu}
+            style={this.mergeAndPrefix(styles.menu, this.props.menuStyle)}
             menuItemStyle={this.mergeAndPrefix(styles.menuItem, this.props.menuItemStyle)}
             hideable={true}
             visible={this.state.open}
@@ -294,11 +299,20 @@ let DropDownMenu = React.createClass({
       selectedIndex: key,
       value: e.target.value,
       open: false,
+      isHovered: false,
     });
   },
 
   _onMenuRequestClose() {
     this.setState({open:false});
+  },
+
+  _handleMouseEnter() {
+    this.setState({isHovered: true});
+  },
+
+  _handleMouseLeave() {
+    this.setState({isHovered: false});
   },
 
   _selectPreviousItem() {
@@ -313,11 +327,6 @@ let DropDownMenu = React.createClass({
     this.setState({
       open: false,
     });
-  },
-
-  _isControlled() {
-    return this.props.hasOwnProperty('value') ||
-      this.props.hasOwnProperty('valueLink');
   },
 
 });
